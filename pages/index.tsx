@@ -1,9 +1,21 @@
-import type { NextPage } from 'next'
-import Head from 'next/head'
-import Image from 'next/image'
-import styles from '../styles/Home.module.css'
+// @ts-nocheck
+import type { NextPage } from "next";
+import Head from "next/head";
+import Image from "next/image";
+import styles from "../styles/Home.module.css";
+import clsx from "clsx";
+import { useState } from "react";
+
+const handleSubmission = (selection?: string, elabortation?: string) => {
+  if (selection && elabortation) {
+    addTextToImage(`public/mham.png`, elabortation);
+  }
+};
 
 const Home: NextPage = () => {
+  const [selection, setSelection] = useState(undefined);
+  const [elabortation, setElaboration] = useState(undefined);
+
   return (
     <div className={styles.container}>
       <Head>
@@ -13,60 +25,112 @@ const Home: NextPage = () => {
       </Head>
 
       <main className={styles.main}>
-        <h1 className={styles.title}>
-          Welcome to <a href="https://nextjs.org">Next.js!</a>
-        </h1>
-
-        <p className={styles.description}>
-          Get started by editing{' '}
-          <code className={styles.code}>pages/index.tsx</code>
-        </p>
-
-        <div className={styles.grid}>
-          <a href="https://nextjs.org/docs" className={styles.card}>
-            <h2>Documentation &rarr;</h2>
-            <p>Find in-depth information about Next.js features and API.</p>
-          </a>
-
-          <a href="https://nextjs.org/learn" className={styles.card}>
-            <h2>Learn &rarr;</h2>
-            <p>Learn about Next.js in an interactive course with quizzes!</p>
-          </a>
-
-          <a
-            href="https://github.com/vercel/next.js/tree/canary/examples"
-            className={styles.card}
-          >
-            <h2>Examples &rarr;</h2>
-            <p>Discover and deploy boilerplate example Next.js projects.</p>
-          </a>
-
-          <a
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
-            className={styles.card}
-          >
-            <h2>Deploy &rarr;</h2>
-            <p>
-              Instantly deploy your Next.js site to a public URL with Vercel.
-            </p>
-          </a>
+        <div className={clsx(styles.card, styles.checkinBox)}>
+          <RadioButton setSelection={setSelection} />
+          <textarea
+            className={styles.checkinText}
+            placeholder="How do you feel today?"
+            onChange={(e) => {
+              // @ts-ignore
+              setElaboration(e.target.value);
+            }}
+          />
+          <button onClick={() => handleSubmission(selection, elabortation)}>
+            {" "}
+            Check in!{" "}
+          </button>
         </div>
       </main>
-
-      <footer className={styles.footer}>
-        <a
-          href="https://vercel.com?utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Powered by{' '}
-          <span className={styles.logo}>
-            <Image src="/vercel.svg" alt="Vercel Logo" width={72} height={16} />
-          </span>
-        </a>
-      </footer>
     </div>
-  )
+  );
+};
+
+const RadioButton = (props: { setSelection: Function }) => {
+  const { setSelection } = props;
+
+  return (
+    // @ts-ignore
+    <div onChange={(e) => setSelection(e.target.value)}>
+      <input type="radio" value="red" name="ryg" /> ❤️
+      <input type="radio" value="yellow" name="ryg" /> 💛
+      <input type="radio" value="green" name="ryg" /> 💚
+    </div>
+  );
+};
+
+function addTextToImage(imagePath: string, text: string) {
+  const circle_canvas: HTMLCanvasElement = document.getElementById(
+    "canvas"
+  ) as HTMLCanvasElement;
+  let context = circle_canvas.getContext("2d");
+  copyImg(imagePath);
+  // Draw Image function
+  // @ts-ignore
+  // let img = new Image({ src: imagePath });
+  // img.onload = function () {
+  //   if (context) {
+  //     console.log(context);
+  //     context.drawImage(img, 0, 0, img.width / 2, img.height / 2);
+  //     context.lineWidth = 1;
+  //     context.fillStyle = "#CC00FF";
+  //     // @ts-ignore
+  //     context.lineStyle = "#ffff00";
+  //     context.font = "18px sans-serif";
+  //     context.fillText(text, 120, 110);
+  //     navigator.clipboard.write([
+  //       new ClipboardItem({
+  //         "image/png": img,
+  //       }),
+  //     ]);
+  //   }
+  // };
 }
 
-export default Home
+function createImage(options) {
+  options = options || {};
+  const img = Image ? new Image() : document.createElement("img");
+  if (options.src) {
+    img.src = options.src;
+  }
+  return img;
+}
+
+function convertToPng(imgBlob) {
+  const imageUrl = window.URL.createObjectURL(imgBlob);
+  const canvas = document.createElement("canvas");
+  const ctx = canvas.getContext("2d");
+  const imageEl = createImage({ src: imageUrl });
+  imageEl.onload = (e) => {
+    canvas.width = e.target.width;
+    canvas.height = e.target.height;
+    ctx.drawImage(e.target, 0, 0, e.target.width, e.target.height);
+    canvas.toBlob(copyToClipboard, "image/png", 1);
+  };
+}
+
+async function copyImg(src) {
+  const img = await fetch(src);
+  const imgBlob = await img.blob();
+  if (src.endsWith(".jpg") || src.endsWith(".jpeg")) {
+    convertToPng(imgBlob);
+  } else if (src.endsWith(".png")) {
+    copyToClipboard(imgBlob);
+  } else {
+    console.error("Format unsupported");
+  }
+}
+
+async function copyToClipboard(pngBlob) {
+  try {
+    await navigator.clipboard.write([
+      new ClipboardItem({
+        [pngBlob.type]: pngBlob,
+      }),
+    ]);
+    console.log("Image copied");
+  } catch (error) {
+    console.error(error);
+  }
+}
+
+export default Home;
